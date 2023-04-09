@@ -10,7 +10,7 @@ from pydub import AudioSegment
 async_mode = None
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins=['https://mxweidmer-default-usfca.dev.8thwall.app'])
+socketio = SocketIO(app, async_mode=async_mode, cors_allowed_origins=['https://mxweidmer-mxbranch-usfca.dev.8thwall.app'])
 
 @socketio.on('hello')
 def hello(message):
@@ -48,31 +48,32 @@ def hello(message):
 #         if is_beat:
 #             print('Beat detected!')
 
-wave_file = None
-wave_name = None
+#wave_file = None
+#wave_name = None
 
-@socketio.on('start')
-def handle_start():
-    global wave_file, wave_name
-    wave_name = 'out.wav'
-    wave_file = wave.open(wave_name, 'wb')
-    wave_file.setnchannels(1)
-    wave_file.setsampwidth(2)
-    wave_file.setframerate(44100)
+audio_segments = []
 
-@socketio.on('write_audio')
+@socketio.on('audio_chunk')
 def handle_audio_chunk(data):
-    global wave_file
-    wave_file.writeframes(data)
-    print('WAV file size:', wave_file.getnframes())
+    global audio_segments
+    print("Received audio chunk")
+    audio_segments.append(data)
 
 @socketio.on('audio_end')
 def handle_audio_end():
-    global wave_file, wave_name
-    if wave_file is not None:
-        wave_file.close()
-        wave_file = None
-        wave_name = None
+    global audio_segments
+
+    # Combine all audio_chunks into a single byte stream
+    audio_data = b''.join(audio_segments)
+
+    # Convert the byte stream to a PyDub AudioSegment (assuming 44.1 kHz sample rate and 16-bit depth)
+    audio = AudioSegment.from_raw(io.BytesIO(audio_data), format="raw", sample_width=2, frame_rate=44100, channels=1)
+
+    # Save the audio as a WAV file
+    audio.export("output.mp3", format="mp3")
+
+    # Clear the audio_chunks list
+    audio_segments.clear()
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='localhost', port=8080)

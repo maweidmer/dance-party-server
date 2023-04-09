@@ -70,7 +70,7 @@ def handle_audio_end():
     audio = AudioSegment.from_raw(io.BytesIO(audio_data), format="raw", sample_width=2, frame_rate=44100, channels=1)
 
     # Save the audio as a WAV file
-    audio.export("output.mp3", format="mp3")
+    audio.export("output.wav", format="wav")
 
     # Clear the audio_chunks list
     audio_segments.clear()
